@@ -1,0 +1,60 @@
+@import "tailwindcss";
+
+@theme {
+  --font-sans: "Plus Jakarta Sans", ui-sans-serif, system-ui, sans-serif;
+
+  --color-wa-dark: #0b141a;
+  --color-wa-header: #202c33;
+  --color-wa-panel: #111b21;
+  --color-wa-bubble-in: #005c4b;
+  --color-wa-bubble-out: #202c33;
+  --color-wa-green: #075e54;
+  --color-wa-green-light: #25d366;
+  --color-wa-teal: #00a884;
+
+  --color-ink-950: #06090d;
+  --color-ink-900: #0b141a;
+  --color-ink-800: #111b21;
+  --color-ink-700: #202c33;
+  --color-ink-600: #2a3942;
+  --color-ink-500: #3b4a54;
+}
+
+:root {
+  color-scheme: dark;
+}
+
+body {
+  margin: 0;
+  background-color: #06090d;
+  color: #e9edef;
+  font-family: "Plus Jakarta Sans", ui-sans-serif, system-ui, sans-serif;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+
+* {
+  box-sizing: border-box;
+}
+
+::-webkit-scrollbar {
+  width: 8px;
+  height: 8px;
+}
+::-webkit-scrollbar-track {
+  background: transparent;
+}
+::-webkit-scrollbar-thumb {
+  background: #3b4a54;
+  border-radius: 8px;
+}
+
+.glass {
+  background: rgba(17, 27, 33, 0.7);
+  backdrop-filter: blur(14px);
+  border: 1px solid rgba(255, 255, 255, 0.08);
+}
+
+input[type="range"] {
+  accent-color: #00a884;
+}
