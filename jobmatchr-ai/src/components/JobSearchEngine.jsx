@@ -43,16 +43,19 @@ export default function JobSearchEngine({
     setApiStatus('loading');
     try {
       const { data } = await axios.get(LIVE_API_URL, {
+        headers: getLiveToken() ? { 'x-pro-token': getLiveToken() } : {},
         params: { q, location: 'South Africa' },
         timeout: 20000,
       });
       if (seq !== requestSeq.current) return;
+      if (err?.response?.status === 403) onProRequired?.();
       if (!data.jobs || data.jobs.length === 0) throw new Error('Empty response');
       setLiveJobs(data.jobs);
       setSourceStatus(data.status || {});
       setApiStatus('live');
-    } catch {
+    } catch (err) {
       if (seq !== requestSeq.current) return;
+      if (err?.response?.status === 403) onProRequired?.();
       setLiveJobs([]);
       setApiStatus('fallback');
     } finally {

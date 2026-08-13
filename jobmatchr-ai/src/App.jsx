@@ -6,6 +6,8 @@ import CandidateMatrix from './components/CandidateMatrix.jsx';
 import JobSearchEngine from './components/JobSearchEngine.jsx';
 import WhatsAppDispatch from './components/WhatsAppDispatch.jsx';
 import SettingsModal from './components/SettingsModal.jsx';
+import ProModal from './components/ProModal.jsx';
+import { isPro, setPro } from './lib/billing.js';
 import SAMPLE_CANDIDATES from './data/sampleCandidates.js';
 import { toE164 } from './utils/whatsappParser.js';
 
@@ -45,6 +47,8 @@ function App() {
   const [isLiveApi, setIsLiveApi] = useState(false);
   const [chatMessages, setChatMessages] = useState([]);
   const [settingsOpen, setSettingsOpen] = useState(false);
+  const [proOpen, setProOpen] = useState(false);
+  const [proActive, setProActive] = useState(() => isPro());
   const [toast, setToast] = useState(null);
   const toastTimer = useRef(null);
 
@@ -81,6 +85,20 @@ function App() {
       ...prev,
       { id: ++chatId, from: 'user', text, timestamp: Date.now() },
     ]);
+  };
+
+  const handleToggleLiveApi = () => {
+    if (!isLiveApi && !proActive) {
+      setProOpen(true);
+      showToast('Upgrade to Pro to unlock live SA job sources', 'error');
+      return;
+    }
+    setIsLiveApi((v) => !v);
+  };
+
+  const handleProRequired = () => {
+    setProOpen(true);
+    showToast('Upgrade to Pro to unlock live SA job sources', 'error');
   };
 
   const handleDispatch = (selectedResults) => {
@@ -124,6 +142,8 @@ function App() {
         selectedJobCount={selectedJobIds.length}
         isLiveApi={isLiveApi}
         onOpenSettings={() => setSettingsOpen(true)}
+        isPro={proActive}
+        onUpgrade={() => setProOpen(true)}
       />
 
       <main className="relative mx-auto max-w-7xl px-4 py-6 sm:px-6">
@@ -147,10 +167,11 @@ function App() {
           <JobSearchEngine
             candidate={candidate}
             isLiveApi={isLiveApi}
-            onToggleLiveApi={() => setIsLiveApi((v) => !v)}
+            onToggleLiveApi={handleToggleLiveApi}
             selectedJobIds={selectedJobIds}
             onToggleSelectJob={handleToggleSelectJob}
             onDispatch={handleDispatch}
+            onProRequired={handleProRequired}
           />
         )}
         {activeTab === 'dispatch' && (
@@ -171,6 +192,17 @@ function App() {
       <SettingsModal
         open={settingsOpen}
         onClose={() => setSettingsOpen(false)}
+        onToast={showToast}
+      />
+
+      <ProModal
+        open={proOpen}
+        onClose={() => setProOpen(false)}
+        onUnlock={() => {
+          setProActive(true);
+          setPro(true);
+          setProOpen(false);
+        }}
         onToast={showToast}
       />
 

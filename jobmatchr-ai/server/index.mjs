@@ -1,8 +1,12 @@
 import express from 'express';
 import helmet from 'helmet';
+import crypto from 'node:crypto';
 import fs from 'node:fs';
 import path from 'node:path';
 import https from 'node:https';
+import { fileURLToPath } from 'node:url';
+
+const __dirname = path.dirname(fileURLToPath(import.meta.url));
 
 const PORT = Number(process.env.PORT || 4000);
 const HOST = process.env.HOST || '0.0.0.0';
@@ -12,6 +16,8 @@ const MAX_QUERY_LENGTH = 80;
 const MAX_RESPONSE_BYTES = 2 * 1024 * 1024;
 const RATE_LIMIT_WINDOW_MS = 60 * 1000;
 const RATE_LIMIT_MAX = Number(process.env.RATE_LIMIT_MAX || 60);
+
+const PRO_TOKEN = process.env.PRO_TOKEN ? String(process.env.PRO_TOKEN) : null;
 
 const SOURCE_HOMEPAGES = {
   PNet: 'https://www.pnet.co.za',
@@ -28,12 +34,12 @@ const useHttps =
   Boolean(process.env.SSL_FORCE) ||
   (fs.existsSync(certPath) && fs.existsSync(keyPath));
 
-const DIST_DIR = path.join(process.cwd(), 'dist');
-const serveStatic =
-  process.env.SERVE_STATIC === '0'
-    ? false
-    : process.env.SERVE_STATIC === '1' ||
-      (process.env.NODE_ENV === 'production' && fs.existsSync(DIST_DIR));
+const DIST_DIR = path.join(__dirname, '../dist');
+const SERVE_STATIC =
+  process.env.SERVE_STATIC === '1' ||
+  (process.env.SERVE_STATIC === undefined &&
+    process.env.NODE_ENV === 'production' &&
+    fs.existsSync(path.join(DIST_DIR, 'index.html')));
 
 const allowedOrigins = (process.env.CORS_ORIGIN || '')
   .split(',')
@@ -99,9 +105,19 @@ function sanitizeUrl(value, fallback) {
 }
 
 const rateHits = new Map();
+
+const IPV4_RE = /^\d{1,3}(\.\d{1,3}){3}$/;
+const IPV6_RE = /^[0-9a-fA-F:.]+$/;
+
+function getClientIp(req) {
+  const ip = req.ip || '';
+  if (IPV4_RE.test(ip) || (IPV6_RE.test(ip) && ip.includes(':'))) return ip;
+  return 'unknown';
+}
+
 function rateLimitMiddleware(req, res, next) {
   if (!req.path.startsWith('/api/')) return next();
-  const key = req.ip || 'unknown';
+  const key = getClientIp(req);
   const now = Date.now();
   const bucket = rateHits.get(key);
   if (!bucket || now - bucket.at >= RATE_LIMIT_WINDOW_MS) {
@@ -123,6 +139,19 @@ setInterval(() => {
   }
 }, 5 * 60 * 1000).unref();
 
+function requireProToken(req, res, next) {
+  if (!PRO_TOKEN) return next();
+  const provided =
+    req.get('x-pro-token') ||
+    String(req.get('authorization') || '').replace(/^Bearer\s+/i, '');
+  const a = Buffer.from(String(provided || ''));
+  const b = Buffer.from(PRO_TOKEN);
+  if (a.length === b.length && a.length > 0 && crypto.timingSafeEqual(a, b)) {
+    return next();
+  }
+  return res.status(403).json({ error: 'Upgrade to Pro to unlock live job sources.' });
+}
+
 function corsMiddleware(req, res, next) {
   const origin = req.headers.origin;
   if (origin && allowedOrigins.includes(origin)) {
@@ -138,6 +167,8 @@ function corsMiddleware(req, res, next) {
 function securityHeaders(req, res, next) {
   res.setHeader('Permissions-Policy', 'geolocation=(), microphone=(), camera=(), payment=(), usb=()');
   res.setHeader('Cross-Origin-Opener-Policy', 'same-origin');
+  res.setHeader('Cross-Origin-Resource-Policy', 'same-origin');
+  res.setHeader('Referrer-Policy', 'strict-origin-when-cross-origin');
   next();
 }
 
@@ -528,7 +559,7 @@ app.get('/api/health', (_req, res) => {
   });
 });
 
-app.get('/api/jobs', async (req, res) => {
+app.get('/api/jobs', requireProToken, async (req, res) => {
   const q = cleanInput(req.query.q);
   const location = cleanInput(req.query.location);
   const cacheKey = `jobs:${q.toLowerCase()}:${location.toLowerCase()}`;
@@ -559,7 +590,7 @@ app.use('/api', (_req, res) => {
   res.status(404).json({ error: 'Not found' });
 });
 
-if (serveStatic) {
+if (SERVE_STATIC) {
   app.use(
     express.static(DIST_DIR, {
       index: 'index.html',
@@ -574,7 +605,11 @@ if (serveStatic) {
     }),
   );
   app.use((req, res, next) => {
-    if (req.method === 'GET' && !req.path.startsWith('/api/')) {
+    if (
+      req.method === 'GET' &&
+      !req.path.startsWith('/api/') &&
+      fs.existsSync(path.join(DIST_DIR, 'index.html'))
+    ) {
       return res.sendFile(path.join(DIST_DIR, 'index.html'));
     }
     return next();
@@ -598,7 +633,8 @@ const listen = () => {
     `TLS: ${useHttps ? `enabled (${certPath})` : 'disabled — set SSL_CERT/SSL_KEY or use a TLS-terminating reverse proxy'}`,
   );
   console.log(`Rate limit: ${RATE_LIMIT_MAX} req/min/IP | Cache: ${CACHE_MAX_ENTRIES} entries, ${CACHE_TTL_MS / 1000}s TTL`);
-  console.log(`Static hosting: ${serveStatic ? `enabled (${DIST_DIR})` : 'disabled'}`);
+  console.log(`Static hosting: ${SERVE_STATIC ? `enabled (${DIST_DIR})` : 'disabled (set SERVE_STATIC=1 or NODE_ENV=production)'}`);
+  console.log(`Live API access: ${PRO_TOKEN ? 'Pro token required (PRO_TOKEN set)' : 'open (no PRO_TOKEN configured)'}`);
   console.log(`CORS origins: ${allowedOrigins.length ? allowedOrigins.join(', ') : 'same-origin only'}`);
   console.log('Sources: PNet, MyCareers, CareerJunction, JobMail, Remotive');
 };

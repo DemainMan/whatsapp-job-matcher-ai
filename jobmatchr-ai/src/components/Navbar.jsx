@@ -1,4 +1,4 @@
-import { Sparkles, MessageCircle, Grid3X3, Briefcase, Send, Settings2 } from 'lucide-react';
+import { Sparkles, MessageCircle, Grid3X3, Briefcase, Send, Settings2, Crown } from 'lucide-react';
 
 const TABS = [
   { id: 'intake', label: '1. WhatsApp Intake', icon: MessageCircle },
@@ -7,7 +7,7 @@ const TABS = [
   { id: 'dispatch', label: '4. WhatsApp Dispatch', icon: Send },
 ];
 
-export default function Navbar({ activeTab, onTabChange, selectedJobCount, isLiveApi, onOpenSettings }) {
+export default function Navbar({ activeTab, onTabChange, selectedJobCount, isLiveApi, onOpenSettings, isPro, onUpgrade }) {
   return (
     <header className="sticky top-0 z-40 border-b border-white/10 bg-ink-900/90 backdrop-blur-xl">
       <div className="mx-auto flex max-w-7xl flex-col gap-3 px-4 py-3 sm:px-6">
@@ -27,6 +27,21 @@ export default function Navbar({ activeTab, onTabChange, selectedJobCount, isLiv
           </div>
 
           <div className="flex items-center gap-2">
+            {isPro ? (
+              <span className="inline-flex items-center gap-1 rounded-full border border-amber-400/40 bg-amber-400/10 px-3 py-1.5 text-[11px] font-bold text-amber-300">
+                <Crown className="h-3.5 w-3.5" />
+                Pro
+              </span>
+            ) : (
+              <button
+                onClick={onUpgrade}
+                className="inline-flex items-center gap-1.5 rounded-xl bg-gradient-to-r from-amber-400 to-yellow-500 px-3 py-2 text-xs font-bold text-ink-900 shadow-lg shadow-amber-400/20 transition hover:brightness-110"
+              >
+                <Crown className="h-4 w-4" />
+                <span className="hidden md:inline">Upgrade to Pro</span>
+                <span className="md:hidden">Pro</span>
+              </button>
+            )}
             <span
               className={`hidden items-center gap-1.5 rounded-full border px-3 py-1.5 text-[11px] font-bold sm:inline-flex ${
                 isLiveApi

@@ -3,6 +3,12 @@ import { X, KeyRound, ShieldCheck, Eye, EyeOff } from 'lucide-react';
 
 const API_KEY_FIELDS = [
   {
+    id: 'live_pro_token',
+    label: 'Pro Live API Token',
+    placeholder: 'Your Pro access token',
+    hint: 'Optional — required only if the server enforces PRO_TOKEN. Sent as x-pro-token when fetching live jobs.',
+  },
+  {
     id: 'jsearch',
     label: 'JSearch (RapidAPI) Key',
     placeholder: 'rjs_xxxxxxxxxxxxxxxx',
