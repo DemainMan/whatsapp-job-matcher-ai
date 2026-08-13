@@ -63,6 +63,41 @@ remote only, ZA citizen no visa required.`,
 Kubernetes, Terraform, AWS, CI/CD pipelines, Linux, Go and Prometheus monitoring. Remote only, R850k+
 (~$85k) minimum. Great with high-availability systems.`,
   },
+  {
+    id: 'candidate-naledi-dlamini',
+    name: 'Naledi Dlamini',
+    phone: '+27 79 456 1234',
+    phoneE164: '+27794561234',
+    yearsOfExperience: 0,
+    seniority: 'Junior',
+    jobType: 'learnership',
+    role: 'electrician',
+    location: 'Durban',
+    workSetup: 'On-site',
+    visaRequired: false,
+    salaryFloorUsd: 0,
+    skills: ['Electrician', 'Wiring'],
+    rawMessage: `Hi, I'm Naledi Dlamini from Durban. I finished matric last year and I'm looking for a
+learnership as an electrician. I don't have work experience yet, but I'm willing to learn and can
+relocate anywhere in KZN.`,
+  },
+  {
+    id: 'candidate-sipho-ndlovu',
+    name: 'Sipho Ndlovu',
+    phone: '+27 73 882 5566',
+    phoneE164: '+27738825566',
+    yearsOfExperience: 0,
+    seniority: 'Junior',
+    jobType: 'entry-level',
+    role: 'general worker',
+    location: 'Johannesburg',
+    workSetup: 'On-site',
+    visaRequired: false,
+    salaryFloorUsd: 0,
+    skills: [],
+    rawMessage: `Sawubona, I'm Sipho Ndlovu from Johannesburg. I just finished matric and I'm looking for any
+entry level job like general work, packing or warehouse. No experience yet but I work hard.`,
+  },
 ];
 
 export default SAMPLE_CANDIDATES;

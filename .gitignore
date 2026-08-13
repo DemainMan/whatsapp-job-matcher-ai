@@ -12,6 +12,15 @@ dist
 dist-ssr
 *.local
 
+# Environment files (never commit real secrets; .env.example is safe to track)
+.env
+.env.*
+!.env.example
+
+# Local TLS certificates (regenerate with: npm run cert)
+certs
+*.pem
+
 # Editor directories and files
 .vscode/*
 !.vscode/extensions.json

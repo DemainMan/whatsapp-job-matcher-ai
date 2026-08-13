@@ -64,7 +64,7 @@ export default function SettingsModal({ open, onClose, onToast }) {
 
   const save = () => {
     localStorage.setItem(STORAGE_KEY, JSON.stringify(values));
-    onToast('API keys saved securely to local storage');
+    onToast('API keys saved to this browser');
     onClose();
   };
 
@@ -123,6 +123,10 @@ export default function SettingsModal({ open, onClose, onToast }) {
               <p className="mt-0.5 text-[10px] text-white/40">{field.hint}</p>
             </div>
           ))}
+          <p className="rounded-lg border border-amber-400/20 bg-amber-400/5 px-3 py-2 text-[10px] leading-snug text-amber-300/80">
+            Keys are stored only in this browser's localStorage and are never sent to the proxy.
+            For production use, move keys to a server-side secrets store instead of the browser.
+          </p>
         </div>
 
         <div className="flex items-center justify-between border-t border-white/10 bg-ink-800 px-5 py-4">

@@ -65,11 +65,12 @@ function App() {
 
   const handleExtract = (parsed) => {
     const phoneE164 = toE164(parsed.phone);
+    const focus = parsed.role || parsed.jobType || 'a job';
     const merged = {
       ...SAMPLE_CANDIDATES[0],
       ...parsed,
       phoneE164,
-      profileText: `I am ${parsed.name}. I have ${parsed.yearsOfExperience} years of experience as a ${parsed.seniority} developer based in ${parsed.location} (${parsed.workSetup}). Core stack: ${parsed.skills.join(', ')}. Seeking a salary of at least $${(parsed.salaryFloorUsd || 0).toLocaleString()}.`,
+      profileText: `I am ${parsed.name}. I have ${parsed.yearsOfExperience || 0} years of experience. Looking for ${focus} work based in ${parsed.location} (${parsed.workSetup}). ${parsed.skills.length ? `Relevant skills: ${parsed.skills.join(', ')}.` : ''}`,
     };
     loadCandidate(merged);
     showToast(`Profile extracted for ${merged.name}`);

@@ -16,9 +16,12 @@ function buildDefaultMessage(candidate, selectedJobs) {
   lines.push(`Hi! 🤖 *JobMatchr AI* has prepared your job matches.`);
   lines.push('');
   lines.push(`*Candidate:* ${candidate.name}`);
-  lines.push(`📍 ${candidate.location} · ${candidate.workSetup} · ${candidate.yearsOfExperience} yrs experience`);
-  lines.push(`🎯 Core stack: ${candidate.skills.slice(0, 6).join(', ') || '—'}`);
-  lines.push(`💵 Salary floor: $${(candidate.salaryFloorUsd || 0).toLocaleString()}`);
+  lines.push(`📍 ${candidate.location} · ${candidate.workSetup} · ${candidate.yearsOfExperience || 0} yrs experience`);
+  const focus = candidate.role || candidate.jobType || null;
+  lines.push(focus ? `🎯 Looking for: ${focus}` : `🎯 Skills: ${candidate.skills.slice(0, 6).join(', ') || '—'}`);
+  if (candidate.salaryFloorUsd) {
+    lines.push(`💵 Salary floor: $${candidate.salaryFloorUsd.toLocaleString()}`);
+  }
   lines.push('');
   lines.push(`*Top Matches (${selectedJobs.length}):*`);
   selectedJobs.forEach(({ score, statusBadge, job }, i) => {

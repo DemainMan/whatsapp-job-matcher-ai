@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from 'react';
+import { useEffect, useMemo, useRef, useState } from 'react';
 import axios from 'axios';
 import {
   RefreshCw, Cloud, Database, Search, MapPin, CheckCircle2, AlertTriangle,
@@ -8,6 +8,12 @@ import MOCK_JOBS from '../data/mockJobs.js';
 import { calculateJobMatch } from '../utils/qualificationEngine.js';
 
 const LIVE_API_URL = '/api/jobs';
+
+function deriveQuery(candidate) {
+  const type = candidate?.jobType || '';
+  const focus = candidate?.role || candidate?.skills?.[0] || '';
+  return [type, focus].filter(Boolean).join(' ');
+}
 
 export default function JobSearchEngine({
   candidate,
@@ -25,8 +31,14 @@ export default function JobSearchEngine({
   const [minMatch, setMinMatch] = useState(60);
   const [locationFilter, setLocationFilter] = useState('All');
   const [matchedJobs, setMatchedJobs] = useState([]);
+  const requestSeq = useRef(0);
+  const lastQuery = useRef(null);
 
-  const fetchLiveJobs = async (q = searchQuery) => {
+  const effectiveQuery = (searchQuery.trim() || deriveQuery(candidate)).trim();
+
+  const fetchLiveJobs = async (q = effectiveQuery) => {
+    const seq = ++requestSeq.current;
+    lastQuery.current = q;
     setLoading(true);
     setApiStatus('loading');
     try {
@@ -34,29 +46,36 @@ export default function JobSearchEngine({
         params: { q, location: 'South Africa' },
         timeout: 20000,
       });
+      if (seq !== requestSeq.current) return;
       if (!data.jobs || data.jobs.length === 0) throw new Error('Empty response');
       setLiveJobs(data.jobs);
       setSourceStatus(data.status || {});
       setApiStatus('live');
     } catch {
+      if (seq !== requestSeq.current) return;
       setLiveJobs([]);
       setApiStatus('fallback');
     } finally {
-      setLoading(false);
+      if (seq === requestSeq.current) setLoading(false);
     }
   };
 
   useEffect(() => {
-    if (isLiveApi && liveJobs.length === 0 && apiStatus === 'idle') {
-      fetchLiveJobs();
-    }
-  }, [isLiveApi, liveJobs.length, apiStatus]);
+    if (!isLiveApi) return;
+    const auto = deriveQuery(candidate);
+    if (!searchQuery.trim() && auto) setSearchQuery(auto);
+  }, [isLiveApi, candidate, searchQuery]);
 
   useEffect(() => {
-    if (!isLiveApi || apiStatus !== 'live') return;
-    const timer = setTimeout(() => fetchLiveJobs(searchQuery), 700);
+    if (!isLiveApi) return;
+    const timer = setTimeout(
+      () => {
+        if (lastQuery.current !== effectiveQuery) fetchLiveJobs(effectiveQuery);
+      },
+      lastQuery.current === null ? 0 : 700,
+    );
     return () => clearTimeout(timer);
-  }, [searchQuery, isLiveApi, apiStatus]);
+  }, [effectiveQuery, isLiveApi]);
 
   const pool = useMemo(() => {
     if (!isLiveApi) return MOCK_JOBS;
@@ -85,9 +104,10 @@ export default function JobSearchEngine({
         return true;
       })
       .filter((r) => {
-        if (!q) return true;
+        const words = q.split(/\s+/).filter(Boolean);
+        if (!words.length) return true;
         const haystack = `${r.job.title} ${r.job.company} ${r.job.requirements?.requiredSkills?.join(' ')} ${r.job.description}`.toLowerCase();
-        return haystack.includes(q);
+        return words.some((word) => haystack.includes(word));
       })
       .sort((a, b) => b.score - a.score);
   }, [results, minMatch, locationFilter, searchQuery]);
@@ -109,25 +129,32 @@ export default function JobSearchEngine({
             </div>
             <div>
               <p className="text-sm font-bold text-white">
-                {isLiveApi ? 'Live API Mode — PNet · MyCareers · Remotive' : 'Hybrid Database Mode — 18 curated roles'}
+                {isLiveApi ? 'Live API Mode — PNet · MyCareers · CareerJunction · JobMail · Remotive' : 'Hybrid Database Mode — 33 curated roles'}
               </p>
               <p className="text-[11px] text-white/50">
                 {apiStatus === 'live' &&
-                  `Fetched live · ${Object.entries(sourceStatus)
+                  `Fetched live · “${effectiveQuery}” · ${Object.entries(sourceStatus)
                     .filter(([, s]) => s === 'up')
                     .map(([s]) => s)
                     .join(' + ') || 'sources online'}`}
-                {apiStatus === 'fallback' && 'Live proxy unreachable — auto-fell back to the local job database'}
-                {apiStatus === 'loading' && 'Fetching live SA jobs…'}
+                {apiStatus === 'fallback' && (
+                  <>
+                    Live proxy unreachable — auto-fell back to the local job database.{' '}
+                    <button
+                      onClick={() => fetchLiveJobs()}
+                      className="font-bold text-wa-teal underline hover:text-white"
+                    >
+                      Retry
+                    </button>
+                  </>
+                )}
+                {apiStatus === 'loading' && `Searching live jobs for “${effectiveQuery}”…`}
                 {apiStatus === 'idle' && 'Matching against the curated South Africa / Global database'}
               </p>
             </div>
           </div>
           <button
-            onClick={() => {
-              onToggleLiveApi();
-              if (!isLiveApi) fetchLiveJobs();
-            }}
+            onClick={onToggleLiveApi}
             disabled={loading}
             className={`inline-flex items-center gap-2 rounded-xl border px-4 py-2.5 text-sm font-bold transition disabled:opacity-50 ${
               isLiveApi
@@ -266,7 +293,7 @@ export default function JobSearchEngine({
                   <a
                     href={job.url}
                     target="_blank"
-                    rel="noreferrer"
+                    rel="noopener noreferrer"
                     className="text-[11px] font-semibold text-wa-teal hover:underline"
                   >
                     View source · {job.source}
