@@ -1,4 +1,5 @@
-export const DEFAULT_CHECKOUT_URL = 'https://YOUR-STORE.lemonsqueezy.com/buy/YOUR-PRODUCT';
+export const DEFAULT_CHECKOUT_URL =
+  'https://jobmatchrai.lemonsqueezy.com/checkout/buy/5fcf75d0-86f5-4ca3-8832-945694e541cf';
 
 const PRO_KEY = 'jobmatchr_pro';
 const CHECKOUT_URL_KEY = 'jobmatchr_checkout_url';
@@ -36,7 +37,7 @@ export function setPro(value) {
 
 export function openCheckout() {
   const url = getCheckoutUrl();
-  if (!isValidCheckoutUrl(url) || url === DEFAULT_CHECKOUT_URL) return false;
+  if (!isValidCheckoutUrl(url)) return false;
   window.open(url, '_blank', 'noopener,noreferrer');
   return true;
 }

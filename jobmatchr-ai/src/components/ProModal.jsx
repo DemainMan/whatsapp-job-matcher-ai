@@ -29,10 +29,6 @@ export default function ProModal({ open, onClose, onUnlock, onToast }) {
 
   const handleBuy = () => {
     const saved = getCheckoutUrl();
-    if (saved === DEFAULT_CHECKOUT_URL) {
-      onToast('Set your Lemon Squeezy checkout link first', 'error');
-      return;
-    }
     if (!isValidCheckoutUrl(saved)) {
       onToast('Checkout link must be a valid https:// URL', 'error');
       return;
