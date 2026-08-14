@@ -6,6 +6,7 @@ import {
 } from 'lucide-react';
 import MOCK_JOBS from '../data/mockJobs.js';
 import { calculateJobMatch } from '../utils/qualificationEngine.js';
+import { getLiveToken } from '../lib/billing.js';
 
 const LIVE_API_URL = '/api/jobs';
 
@@ -22,6 +23,7 @@ export default function JobSearchEngine({
   selectedJobIds,
   onToggleSelectJob,
   onDispatch,
+  onProRequired,
 }) {
   const [liveJobs, setLiveJobs] = useState([]);
   const [loading, setLoading] = useState(false);
