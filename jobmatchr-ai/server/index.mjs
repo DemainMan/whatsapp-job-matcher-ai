@@ -25,6 +25,8 @@ const SOURCE_HOMEPAGES = {
   CareerJunction: 'https://www.careerjunction.co.za',
   JobMail: 'https://www.jobmail.co.za',
   Remotive: 'https://remotive.com/remote-jobs',
+  Jobicy: 'https://jobicy.com',
+  Arbeitnow: 'https://arbeitnow.com',
 };
 
 const CERT_DIR = path.join(process.cwd(), 'certs');
@@ -522,6 +524,75 @@ async function fetchJobMail(q) {
     .slice(0, 25);
 }
 
+async function fetchJobicy(q) {
+  const url = `https://jobicy.com/api/v2/remote-jobs?count=25`;
+  const data = await fetchJson(url);
+  const pool = (data.jobs || []).filter((job) => job.jobTitle);
+  const query = String(q || '').trim().toLowerCase();
+  const words = query.split(/\s+/).filter(Boolean);
+  const relevant = words.length
+    ? pool.filter((job) => {
+        const haystack =
+          `${job.jobTitle} ${job.companyName} ${(job.jobIndustry || []).join(' ')} ${job.jobExcerpt || ''}`.toLowerCase();
+        return words.some((w) => haystack.includes(w));
+      })
+    : pool;
+
+  return relevant
+    .slice(0, 20)
+    .map((job) =>
+      normalizeJob(
+        {
+          id: `jobicy-${job.id}`,
+          title: job.jobTitle,
+          company: job.companyName,
+          url: job.url,
+          description: `${job.jobExcerpt || ''} ${(job.jobIndustry || []).join(' ')}`,
+          workSetup: 'Remote',
+          requiredSkills: extractSkills(`${job.jobTitle} ${(job.jobIndustry || []).join(' ')}`, []),
+        },
+        'Jobicy',
+        'USD',
+        job.jobGeo || 'Global Remote',
+      ),
+    );
+}
+
+async function fetchArbeitnow(q) {
+  const url = `https://arbeitnow.com/api/job-board-api`;
+  const data = await fetchJson(url);
+  const pool = data.data || [];
+  const query = String(q || '').trim().toLowerCase();
+  const words = query.split(/\s+/).filter(Boolean);
+  const relevant = words.length
+    ? pool.filter((job) => {
+        const haystack =
+          `${job.title || ''} ${job.company_name || ''} ${(job.tags || []).join(' ')}`.toLowerCase();
+        return words.some((w) => haystack.includes(w));
+      })
+    : pool;
+
+  return relevant
+    .slice(0, 20)
+    .map((job) => {
+      const loc = Array.isArray(job.location) ? job.location.join(', ') : job.location || 'Germany / Europe';
+      return normalizeJob(
+        {
+          id: `arbeitnow-${job.slug}`,
+          title: job.title,
+          company: job.company_name,
+          url: job.url,
+          description: stripHtml(job.description || ''),
+          workSetup: job.remote === true ? 'Remote' : 'On-site',
+          requiredSkills: extractSkills(`${job.title} ${(job.tags || []).join(' ')}`, []),
+        },
+        'Arbeitnow',
+        'EUR',
+        loc,
+      );
+    });
+}
+
 async function aggregateJobs(q, location) {
   const sources = [
     { name: 'PNet', run: () => fetchPNet(q, location) },
@@ -529,6 +600,8 @@ async function aggregateJobs(q, location) {
     { name: 'CareerJunction', run: () => fetchCareerJunction(q) },
     { name: 'JobMail', run: () => fetchJobMail(q) },
     { name: 'Remotive', run: () => fetchRemotive(q) },
+    { name: 'Jobicy', run: () => fetchJobicy(q) },
+    { name: 'Arbeitnow', run: () => fetchArbeitnow(q) },
   ];
 
   const settled = await Promise.allSettled(sources.map((s) => s.run()));
@@ -555,7 +628,7 @@ app.get('/api/health', (_req, res) => {
   res.json({
     ok: true,
     service: 'jobmatchr-proxy',
-    sources: ['PNet', 'MyCareers', 'CareerJunction', 'JobMail', 'Remotive'],
+    sources: ['PNet', 'MyCareers', 'CareerJunction', 'JobMail', 'Remotive', 'Jobicy', 'Arbeitnow'],
   });
 });
 
@@ -636,7 +709,7 @@ const listen = () => {
   console.log(`Static hosting: ${SERVE_STATIC ? `enabled (${DIST_DIR})` : 'disabled (set SERVE_STATIC=1 or NODE_ENV=production)'}`);
   console.log(`Live API access: ${PRO_TOKEN ? 'Pro token required (PRO_TOKEN set)' : 'open (no PRO_TOKEN configured)'}`);
   console.log(`CORS origins: ${allowedOrigins.length ? allowedOrigins.join(', ') : 'same-origin only'}`);
-  console.log('Sources: PNet, MyCareers, CareerJunction, JobMail, Remotive');
+  console.log('Sources: PNet, MyCareers, CareerJunction, JobMail, Remotive, Jobicy, Arbeitnow');
 };
 
 if (useHttps) {

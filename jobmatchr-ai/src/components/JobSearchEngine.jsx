@@ -99,6 +99,9 @@ export default function JobSearchEngine({
       .filter((r) => {
         if (locationFilter === 'All') return true;
         if (locationFilter === 'Remote') return r.job.workSetup === 'Remote';
+        if (locationFilter === 'International') {
+          return ['Remotive', 'Jobicy', 'Arbeitnow'].includes(r.job.source);
+        }
         if (locationFilter === 'South Africa') {
           return /cape town|johannesburg|durban|pretoria|bloemfontein|polokwane|east london|port elizabeth|gqeberha|nelspruit|mbombela|potchefstroom|kimberley|richards bay|soweto|randburg|sandton|centurion|stellenbosch|remote za|south africa|pinetown|umhlanga|westville|vereeniging|witbank|emalahleni|rustenburg|middelburg|phuthaditjhaba|tshwane|ekurhuleni|gauteng|western cape|kwazulu-natal|eastern cape|mpumalanga|free state|limpopo|northern cape|north west/i.test(
             `${r.job.location} ${r.job.workSetup}`,
@@ -132,7 +135,7 @@ export default function JobSearchEngine({
             </div>
             <div>
               <p className="text-sm font-bold text-white">
-                {isLiveApi ? 'Live API Mode — PNet · MyCareers · CareerJunction · JobMail · Remotive' : 'Hybrid Database Mode — 33 curated roles'}
+                {isLiveApi ? 'Live API Mode — PNet · MyCareers · CareerJunction · JobMail · Remotive · Jobicy · Arbeitnow' : 'Hybrid Database Mode — 33 curated roles'}
               </p>
               <p className="text-[11px] text-white/50">
                 {apiStatus === 'live' &&
@@ -203,7 +206,7 @@ export default function JobSearchEngine({
           </div>
         </div>
         <div className="mt-3 flex flex-wrap gap-2">
-          {['All', 'Remote', 'South Africa'].map((filter) => (
+          {['All', 'Remote', 'International', 'South Africa'].map((filter) => (
             <button
               key={filter}
               onClick={() => setLocationFilter(filter)}
